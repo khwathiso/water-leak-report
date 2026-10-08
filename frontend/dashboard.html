@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard | Pretoria Municipality Water Services</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            water: {
+              50: "#f0f9ff",
+              100: "#e0f2fe",
+              200: "#bae6fd",
+              400: "#38bdf8",
+              500: "#0ea5e9",
+              600: "#0284c7",
+              700: "#0369a1",
+              800: "#075985",
+              900: "#0c4a6e"
+            }
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="min-h-screen bg-slate-100 font-sans text-slate-800">
+  <header class="bg-water-700 text-white shadow-md">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
+      <div>
+        <p id="site-title" class="text-lg font-bold tracking-tight">Pretoria Municipality &mdash; Water Services</p>
+        <p class="text-xs text-water-100">Water Leak Reporting Portal</p>
+      </div>
+      <nav class="flex items-center gap-2 text-sm">
+        <a id="nav-link-report" href="index.html" class="rounded px-3 py-2 font-medium hover:bg-white/10">Report a Leak</a>
+        <a id="nav-link-reports" href="reports.html" class="rounded px-3 py-2 font-medium hover:bg-white/10">View Reports</a>
+        <a id="nav-link-dashboard" href="dashboard.html" class="rounded bg-white/15 px-3 py-2 font-medium">Dashboard</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-4 py-8">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 id="page-heading" class="text-2xl font-bold text-water-900">Leak Reports Dashboard</h1>
+        <p id="last-updated" data-testid="last-updated" class="text-sm text-slate-500">Loading statistics...</p>
+      </div>
+      <button id="refresh-dashboard" data-testid="refresh-dashboard" type="button"
+        class="rounded border border-water-600 px-4 py-2 text-sm font-semibold text-water-700 hover:bg-water-50">
+        Refresh
+      </button>
+    </div>
+
+    <section class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div class="rounded-lg bg-white p-5 shadow">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Total reports</p>
+        <p id="stat-total" data-testid="stat-total" class="mt-1 text-3xl font-bold text-water-700">0</p>
+      </div>
+      <div class="rounded-lg bg-white p-5 shadow">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Submitted</p>
+        <p id="stat-submitted" data-testid="stat-submitted" class="mt-1 text-3xl font-bold text-sky-600">0</p>
+      </div>
+      <div class="rounded-lg bg-white p-5 shadow">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">In progress</p>
+        <p id="stat-in-progress" data-testid="stat-in-progress" class="mt-1 text-3xl font-bold text-amber-600">0</p>
+      </div>
+      <div class="rounded-lg bg-white p-5 shadow">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Resolved</p>
+        <p id="stat-resolved" data-testid="stat-resolved" class="mt-1 text-3xl font-bold text-green-600">0</p>
+      </div>
+      <div class="rounded-lg bg-white p-5 shadow">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Critical open</p>
+        <p id="stat-critical-open" data-testid="stat-critical-open" class="mt-1 text-3xl font-bold text-red-600">0</p>
+      </div>
+    </section>
+
+    <section class="mb-6 grid gap-4 lg:grid-cols-2">
+      <div class="rounded-lg bg-white p-5 shadow">
+        <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-water-800">Reports by status</h2>
+        <div id="status-breakdown" data-testid="status-breakdown"></div>
+      </div>
+      <div class="rounded-lg bg-white p-5 shadow">
+        <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-water-800">Reports by area</h2>
+        <div id="area-breakdown" data-testid="area-breakdown"></div>
+      </div>
+    </section>
+
+    <section class="rounded-lg bg-white p-5 shadow">
+      <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-water-800">Recent reports</h2>
+      <ul id="recent-reports" data-testid="recent-reports" class="divide-y divide-slate-100"></ul>
+    </section>
+  </main>
+
+  <footer class="mt-8 border-t border-slate-200 bg-white py-4">
+    <p class="mx-auto max-w-6xl px-4 text-center text-xs text-slate-500">
+      &copy; 2026 Pretoria Municipality Water Services &mdash; mulondok Khwathiso.
+    </p>
+  </footer>
+
+  <div id="toast-container" data-testid="toast-container" class="pointer-events-none fixed right-4 top-4 z-50 flex w-80 flex-col gap-2"></div>
+
+  <script src="js/shared.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

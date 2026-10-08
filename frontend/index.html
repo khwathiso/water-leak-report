@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Report a Leak | Pretoria Municipality Water Services</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            water: {
+              50: "#f0f9ff",
+              100: "#e0f2fe",
+              200: "#bae6fd",
+              400: "#38bdf8",
+              500: "#0ea5e9",
+              600: "#0284c7",
+              700: "#0369a1",
+              800: "#075985",
+              900: "#0c4a6e"
+            }
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="min-h-screen bg-slate-100 font-sans text-slate-800">
+  <header class="bg-water-700 text-white shadow-md">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
+      <div>
+        <p id="site-title" class="text-lg font-bold tracking-tight">Pretoria Municipality &mdash; Water Services</p>
+        <p class="text-xs text-water-100">Water Leak Reporting Portal</p>
+      </div>
+      <nav class="flex items-center gap-2 text-sm">
+        <a id="nav-link-report" href="index.html" class="rounded bg-white/15 px-3 py-2 font-medium">Report a Leak</a>
+        <a id="nav-link-reports" href="reports.html" class="rounded px-3 py-2 font-medium hover:bg-white/10">View Reports</a>
+        <a id="nav-link-dashboard" href="dashboard.html" class="rounded px-3 py-2 font-medium hover:bg-white/10">Dashboard</a>
+        <a id="nav-link-dashboard" href="#" class="rounded px-3 py-2 font-medium hover:bg-white/10">Chat with us</a>
+
+      </nav>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-4 py-8">
+    <div class="mb-6">
+      <h1 id="page-heading" class="text-2xl font-bold text-water-900">Report a Water Leak</h1>
+      <p class="text-sm text-slate-600">Fill in the form below and our maintenance team will be dispatched to the site.</p>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-3">
+      <section class="rounded-lg bg-white p-6 shadow lg:col-span-2">
+        <div id="success-panel" data-testid="success-panel" class="mb-4 hidden rounded border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"></div>
+        <div id="form-error-summary" data-testid="form-error-summary" class="mb-4 hidden rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></div>
+
+        <form id="report-form" data-testid="report-form" novalidate class="space-y-4">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="full-name" class="mb-1 block text-sm font-medium text-slate-700">Full name</label>
+              <input id="full-name" name="full_name" data-testid="input-full-name" type="text" autocomplete="name"
+                placeholder="e.g. Khwathiso Mulondo"
+                class="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-water-500 focus:outline-none focus:ring-2 focus:ring-water-200" />
+              <p id="full-name-error" data-testid="error-full-name" class="mt-1 hidden text-sm text-red-600"></p>
+            </div>
+            <div>
+              <label for="email" class="mb-1 block text-sm font-medium text-slate-700">Email address</label>
+              <input id="email" name="email" data-testid="input-email" type="email" autocomplete="email"
+                placeholder="mulondok@gmail.com"
+                class="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-water-500 focus:outline-none focus:ring-2 focus:ring-water-200" />
+              <p id="email-error" data-testid="error-email" class="mt-1 hidden text-sm text-red-600"></p>
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="phone" class="mb-1 block text-sm font-medium text-slate-700">Phone number</label>
+              <input id="phone" name="phone" data-testid="input-phone" type="tel" autocomplete="tel"
+                placeholder="e.g. 0811234567"
+                class="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-water-500 focus:outline-none focus:ring-2 focus:ring-water-200" />
+              <p id="phone-error" data-testid="error-phone" class="mt-1 hidden text-sm text-red-600"></p>
+            </div>
+            <div>
+              <label for="address" class="mb-1 block text-sm font-medium text-slate-700">Street address</label>
+              <input id="address" name="address" data-testid="input-address" type="text"
+                placeholder="e.g. 12 Stanza Bopape Street"
+                class="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-water-500 focus:outline-none focus:ring-2 focus:ring-water-200" />
+              <p id="address-error" data-testid="error-address" class="mt-1 hidden text-sm text-red-600"></p>
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="area" class="mb-1 block text-sm font-medium text-slate-700">Area</label>
+              <select id="area" name="area" data-testid="select-area"
+                class="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm focus:border-water-500 focus:outline-none focus:ring-2 focus:ring-water-200">
+                <option value="">Select an area</option>
+                <option value="Arcadia">Arcadia</option>
+                <option value="Atteridgeville">Atteridgeville</option>
+                <option value="Brooklyn">Brooklyn</option>
+                <option value="Centurion">Centurion</option>
+                <option value="Claremont">Claremont</option>
+                <option value="Danville">Danville</option>
+                <option value="Garankuwa">Garankuwa</option>
+                <option value="Hatfield">Hatfield</option>
+                <option value="Mamelodi">Mamelodi</option>
+                <option value="Menlo Park">Menlo Park</option>
+                <option value="Moreleta Park">Moreleta Park</option>
+                <option value="muckleneuk"> muckleneuk</option>
+                <option value="Pretoria Central">Pretoria Central</option>
+                <option value="Rietfontein">Rietfontein</option>
+                <option value="Soshanguve">Soshanguve</option>
+                <option value="Sunnyside">Sunnyside</option>
+                <option value="Waverley">Waverley</option>
+                <option value="Waterkloof">Waterkloof</option>
+                <option value="Wonderboom">Wonderboom</option>
+              </select>
+              <p id="area-error" data-testid="error-area" class="mt-1 hidden text-sm text-red-600"></p>
+            </div>
+            <div>
+              <label for="severity" class="mb-1 block text-sm font-medium text-slate-700">Severity</label>
+              <select id="severity" name="severity" data-testid="select-severity"
+                class="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm focus:border-water-500 focus:outline-none focus:ring-2 focus:ring-water-200">
+                <option value="">Select severity</option>
+                <option value="low">Low (minor drip)</option>
+                <option value="medium">Medium (steady leak)</option>
+                <option value="high">High (heavy flow)</option>
+                <option value="critical">Critical (burst / flooding)</option>
+              </select>
+              <p id="severity-error" data-testid="error-severity" class="mt-1 hidden text-sm text-red-600"></p>
+            </div>
+          </div>
+
+          <div>
+            <label for="description" class="mb-1 block text-sm font-medium text-slate-700">Description of the leak</label>
+            <textarea id="description" name="description" data-testid="input-description" rows="4"
+              placeholder="Describe where the leak is, how bad it is, and any landmarks nearby..."
+              class="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-water-500 focus:outline-none focus:ring-2 focus:ring-water-200"></textarea>
+            <p id="description-error" data-testid="error-description" class="mt-1 hidden text-sm text-red-600"></p>
+          </div>
+
+          <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+            <p class="text-xs text-slate-500">All fields are required.</p>
+            <button id="submit-report" data-testid="submit-report" type="submit"
+              class="rounded bg-water-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-water-400 disabled:cursor-not-allowed disabled:opacity-60">
+              Submit Report
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <aside class="space-y-4">
+        <div class="rounded-lg bg-white p-5 shadow">
+          <h2 class="mb-2 text-sm font-bold uppercase tracking-wide text-water-800">Emergency contact</h2>
+          <p class="text-sm text-slate-600">Burst pipes / flooding (24 hours):</p>
+          <p id="emergency-number" class="text-lg font-bold text-water-700">012 358 9999</p>
+          <p class="mt-2 text-sm text-slate-600">Life-threatening emergencies: <strong>10177</strong></p>
+        </div>
+        <div class="rounded-lg bg-white p-5 shadow">
+          <h2 class="mb-2 text-sm font-bold uppercase tracking-wide text-water-800">What happens next</h2>
+          <ol class="list-decimal space-y-1 pl-5 text-sm text-slate-600">
+            <li>You receive a reference number for your report.</li>
+            <li>A maintenance team is dispatched to the area.</li>
+            <li>Track progress on the Reports page.</li>
+          </ol>
+        </div>
+        <div class="rounded-lg border border-water-200 bg-water-50 p-5">
+          <h2 class="mb-1 text-sm font-bold uppercase tracking-wide text-water-800">Tip</h2>
+          <p class="text-sm text-water-900">Give the exact street address and landmarks so the crew can find the leak quickly.</p>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="mt-8 border-t border-slate-200 bg-white py-4">
+    <p class="mx-auto max-w-6xl px-4 text-center text-xs text-slate-500">
+      &copy; 2026 Pretoria Municipality Water Services &mdash; Mulondo Khwathiso.
+    </p>
+  </footer>
+
+  <div id="toast-container" data-testid="toast-container" class="pointer-events-none fixed right-4 top-4 z-50 flex w-80 flex-col gap-2"></div>
+
+  <script src="js/shared.js"></script>
+  <script src="js/index.js"></script>
+</body>
+</html>

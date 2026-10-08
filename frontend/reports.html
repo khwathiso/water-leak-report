@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>View Reports | Pretoria Municipality Water Services</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            water: {
+              50: "#f0f9ff",
+              100: "#e0f2fe",
+              200: "#bae6fd",
+              400: "#38bdf8",
+              500: "#0ea5e9",
+              600: "#0284c7",
+              700: "#0369a1",
+              800: "#075985",
+              900: "#0c4a6e"
+            }
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="min-h-screen bg-slate-100 font-sans text-slate-800">
+  <header class="bg-water-700 text-white shadow-md">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
+      <div>
+        <p id="site-title" class="text-lg font-bold tracking-tight">Pretoria Municipality &mdash; Water Services</p>
+        <p class="text-xs text-water-100">Water Leak Reporting Portal</p>
+      </div>
+      <nav class="flex items-center gap-2 text-sm">
+        <a id="nav-link-report" href="index.html" class="rounded px-3 py-2 font-medium hover:bg-white/10">Report a Leak</a>
+        <a id="nav-link-reports" href="reports.html" class="rounded bg-white/15 px-3 py-2 font-medium">View Reports</a>
+        <a id="nav-link-dashboard" href="dashboard.html" class="rounded px-3 py-2 font-medium hover:bg-white/10">Dashboard</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-4 py-8">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 id="page-heading" class="text-2xl font-bold text-water-900">Reported Leaks</h1>
+        <p class="text-sm text-slate-600">Filter, update the status of, or delete submitted reports.</p>
+      </div>
+      <button id="refresh-reports" data-testid="refresh-reports" type="button"
+        class="rounded border border-water-600 px-4 py-2 text-sm font-semibold text-water-700 hover:bg-water-50">
+        Refresh
+      </button>
+    </div>
+
+    <section class="mb-4 rounded-lg bg-white p-4 shadow">
+      <div class="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label for="filter-status" class="mb-1 block text-sm font-medium text-slate-700">Status</label>
+          <select id="filter-status" data-testid="filter-status"
+            class="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm focus:border-water-500 focus:outline-none focus:ring-2 focus:ring-water-200">
+            <option value="">All statuses</option>
+            <option value="submitted">Submitted</option>
+            <option value="in_progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+            <option value="on_hold">On Hold</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <div>
+          <label for="filter-area" class="mb-1 block text-sm font-medium text-slate-700">Area</label>
+          <select id="filter-area" data-testid="filter-area"
+            class="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm focus:border-water-500 focus:outline-none focus:ring-2 focus:ring-water-200">
+            <option value="">All areas</option>
+            <option value="Arcadia">Arcadia</option>
+            <option value="Atteridgeville">Atteridgeville</option>
+            <option value="Brooklyn">Brooklyn</option>
+            <option value="Centurion">Centurion</option>
+            <option value="Claremont">Claremont</option>
+            <option value="Danville">Danville</option>
+            <option value="Garankuwa">Garankuwa</option>
+            <option value="Hatfield">Hatfield</option>
+            <option value="Mamelodi">Mamelodi</option>
+            <option value="Menlo Park">Menlo Park</option>
+            <option value="Moreleta Park">Moreleta Park</option>
+            <option value="Pretoria Central">Pretoria Central</option>
+            <option value="Rietfontein">Rietfontein</option>
+            <option value="Soshanguve">Soshanguve</option>
+            <option value="Sunnyside">Sunnyside</option>
+            <option value="Waverley">Waverley</option>
+            <option value="Waterkloof">Waterkloof</option>
+            <option value="Wonderboom">Wonderboom</option>
+          </select>
+        </div>
+        <div>
+          <label for="search-reports" class="mb-1 block text-sm font-medium text-slate-700">Search</label>
+          <div class="flex gap-2">
+            <input id="search-reports" data-testid="search-reports" type="text"
+              placeholder="Name, address or keyword..."
+              class="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-water-500 focus:outline-none focus:ring-2 focus:ring-water-200" />
+            <button id="search-button" data-testid="search-button" type="button"
+              class="rounded bg-water-600 px-4 py-2 text-sm font-semibold text-white hover:bg-water-700">Search</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-lg bg-white shadow">
+      <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+        <h2 class="text-sm font-bold uppercase tracking-wide text-water-800">Reports</h2>
+        <span id="reports-count" data-testid="reports-count" class="text-sm text-slate-500">0 report(s)</span>
+      </div>
+
+      <div id="table-wrapper" data-testid="table-wrapper" class="overflow-x-auto">
+        <table id="reports-table" data-testid="reports-table" class="min-w-full text-left">
+          <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th class="px-4 py-3">ID</th>
+              <th class="px-4 py-3">Reporter</th>
+              <th class="px-4 py-3">Location</th>
+              <th class="px-4 py-3">Severity</th>
+              <th class="px-4 py-3">Status</th>
+              <th class="px-4 py-3">Change status</th>
+              <th class="px-4 py-3">Reported on</th>
+              <th class="px-4 py-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="reports-body" data-testid="reports-body"></tbody>
+        </table>
+      </div>
+
+      <div id="empty-state" data-testid="empty-state" class="hidden px-4 py-10 text-center">
+        <p class="text-sm font-semibold text-slate-600">No reports found.</p>
+        <p class="mt-1 text-sm text-slate-400">Try changing the filters or submit a new leak report.</p>
+        <a href="index.html" class="mt-4 inline-block rounded bg-water-600 px-4 py-2 text-sm font-semibold text-white hover:bg-water-700">Report a Leak</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="mt-8 border-t border-slate-200 bg-white py-4">
+    <p class="mx-auto max-w-6xl px-4 text-center text-xs text-slate-500">
+      &copy; 2026 Pretoria Municipality Water Services &mdash; demo application for testing purposes.
+    </p>
+  </footer>
+
+  <div id="toast-container" data-testid="toast-container" class="pointer-events-none fixed right-4 top-4 z-50 flex w-80 flex-col gap-2"></div>
+
+  <script src="js/shared.js"></script>
+  <script src="js/reports.js"></script>
+</body>
+</html>
