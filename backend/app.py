@@ -10,7 +10,7 @@ FRONTEND_DIR = BASE_DIR.parent / "frontend"
 DB_PATH = BASE_DIR / "water_leaks.db"
 
 VALID_SEVERITIES = ("low", "medium", "high", "critical")
-VALID_STATUSES = ("submitted", "in_progress", "resolved","on_hold" "rejected")
+VALID_STATUSES = ("submitted", "in_progress", "resolved", "on_hold", "rejected")
 
 AREAS = [
     "Arcadia",
@@ -89,7 +89,8 @@ SAMPLE_REPORTS = [
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 PHONE_RE = re.compile(r"^(?:\+27|0)[1-9]\d{8}$")
 
-app = Flask(__name__, static_folder=None)
+# Configure static folder pointing to FRONTEND_DIR
+app = Flask(__name__, static_folder=str(FRONTEND_DIR), static_url_path="")
 
 
 def get_db():
@@ -371,6 +372,7 @@ def js_files(filename):
     return serve_frontend_file(f"js/{filename}")
 
 
+# Initialize SQLite database on app load
 init_db()
 
 if __name__ == "__main__":
