@@ -2,6 +2,7 @@ const STATUS_LABELS = {
   submitted: "Submitted",
   in_progress: "In Progress",
   resolved: "Resolved",
+  on_hold: "On Hold",
   rejected: "Rejected",
 };
 
@@ -9,6 +10,7 @@ const STATUS_BADGE_CLASSES = {
   submitted: "bg-sky-100 text-sky-800",
   in_progress: "bg-amber-100 text-amber-800",
   resolved: "bg-green-100 text-green-800",
+  on_hold: "bg-slate-200 text-slate-700",
   rejected: "bg-red-100 text-red-800",
 };
 
@@ -18,6 +20,8 @@ const SEVERITY_BADGE_CLASSES = {
   high: "bg-orange-100 text-orange-800",
   critical: "bg-red-100 text-red-800",
 };
+
+let CURRENT_USER = null;
 
 function escapeHtml(value) {
   return String(value === null || value === undefined ? "" : value)
@@ -71,6 +75,47 @@ function showToast(message, type = "success") {
   window.setTimeout(dismiss, 4500);
 }
 
+function isAuthPage() {
+  return /(?:^|\/)(signin|register)\.html$/.test(window.location.pathname);
+}
+
+async function fetchCurrentUser() {
+  try {
+    const response = await fetch("/api/auth/me");
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (error) {
+    return null;
+  }
+}
+
+async function requireAuth() {
+  CURRENT_USER = await fetchCurrentUser();
+  if (!CURRENT_USER) {
+    window.location.href = "signin.html";
+    return null;
+  }
+
+  const userLabel = document.getElementById("current-user");
+  if (userLabel) {
+    userLabel.textContent = CURRENT_USER.username + " (" + CURRENT_USER.role + ")";
+  }
+
+  const signoutButton = document.getElementById("signout-button");
+  if (signoutButton) {
+    signoutButton.addEventListener("click", async () => {
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+      } catch (error) {
+        /* ignore */
+      }
+      window.location.href = "signin.html";
+    });
+  }
+
+  return CURRENT_USER;
+}
+
 async function apiRequest(path, options = {}) {
   const response = await fetch("/api" + path, {
     headers: { "Content-Type": "application/json" },
@@ -85,6 +130,9 @@ async function apiRequest(path, options = {}) {
   }
 
   if (!response.ok) {
+    if (response.status === 401 && !isAuthPage()) {
+      window.location.href = "signin.html";
+    }
     const error = new Error(
       (body && body.message) || "Request failed with status " + response.status
     );

@@ -1,4 +1,7 @@
-(function () {
+(async function () {
+  const user = await requireAuth();
+  if (!user) return;
+
   function setText(id, value) {
     const element = document.getElementById(id);
     if (element) element.textContent = value;

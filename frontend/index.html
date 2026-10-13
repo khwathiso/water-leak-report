@@ -34,12 +34,15 @@
         <p id="site-title" class="text-lg font-bold tracking-tight">Pretoria Municipality &mdash; Water Services</p>
         <p class="text-xs text-water-100">Water Leak Reporting Portal</p>
       </div>
-      <nav class="flex items-center gap-2 text-sm">
+      <nav class="flex flex-wrap items-center gap-2 text-sm">
         <a id="nav-link-report" href="index.html" class="rounded bg-white/15 px-3 py-2 font-medium">Report a Leak</a>
         <a id="nav-link-reports" href="reports.html" class="rounded px-3 py-2 font-medium hover:bg-white/10">View Reports</a>
         <a id="nav-link-dashboard" href="dashboard.html" class="rounded px-3 py-2 font-medium hover:bg-white/10">Dashboard</a>
-        <a id="nav-link-dashboard" href="#" class="rounded px-3 py-2 font-medium hover:bg-white/10">Chat with us</a>
-
+        <a id="nav-link-chat" href="#" class="rounded px-3 py-2 font-medium hover:bg-white/10">Chat with us</a>
+        <span class="mx-1 hidden h-6 w-px bg-white/30 sm:inline-block"></span>
+        <span id="current-user" data-testid="current-user" class="px-2 text-water-100"></span>
+        <button id="signout-button" data-testid="signout-button" type="button"
+          class="rounded border border-white/40 px-3 py-2 font-medium hover:bg-white/10">Sign out</button>
       </nav>
     </div>
   </header>

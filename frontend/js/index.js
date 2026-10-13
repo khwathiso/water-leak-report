@@ -1,4 +1,7 @@
-(function () {
+(async function () {
+  const user = await requireAuth();
+  if (!user) return;
+
   const form = document.getElementById("report-form");
   const fieldIds = [
     "full-name",

@@ -1,9 +1,12 @@
+import os
 import re
 import sqlite3
 from datetime import datetime, timezone
+from functools import wraps
 from pathlib import Path
 
-from flask import Flask, abort, g, jsonify, request, send_from_directory
+from flask import Flask, abort, g, jsonify, request, send_from_directory, session
+from werkzeug.security import check_password_hash, generate_password_hash
 
 BASE_DIR = Path(__file__).resolve().parent
 FRONTEND_DIR = BASE_DIR.parent / "frontend"
@@ -11,6 +14,7 @@ DB_PATH = BASE_DIR / "water_leaks.db"
 
 VALID_SEVERITIES = ("low", "medium", "high", "critical")
 VALID_STATUSES = ("submitted", "in_progress", "resolved", "on_hold", "rejected")
+VALID_ROLES = ("citizen", "admin")
 
 AREAS = [
     "Arcadia",
@@ -35,8 +39,18 @@ AREAS = [
 ]
 
 SCHEMA = """
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'citizen',
+    created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS reports (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
     full_name TEXT NOT NULL,
     email TEXT NOT NULL,
     phone TEXT NOT NULL,
@@ -46,10 +60,19 @@ CREATE TABLE IF NOT EXISTS reports (
     description TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'submitted',
     created_at TEXT NOT NULL,
-    updated_at TEXT
+    updated_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES users (id)
 );
 """
 
+# (username, email, password, role) - change these before any real use.
+SEED_USERS = [
+    ("admin", "admin@pretoria.gov.za", "admin123", "admin"),
+    ("thabo", "thabo.mokoena@example.com", "password123", "citizen"),
+    ("lerato", "lerato.nkosi@example.com", "password123", "citizen"),
+]
+
+# (full_name, email, phone, address, area, severity, description, status, owner_username, created_at)
 SAMPLE_REPORTS = [
     (
         "Thabo Mokoena",
@@ -60,6 +83,7 @@ SAMPLE_REPORTS = [
         "critical",
         "Water main burst and the street outside the taxi rank is flooded.",
         "submitted",
+        "thabo",
         "2026-10-01 08:15:00",
     ),
     (
@@ -71,6 +95,7 @@ SAMPLE_REPORTS = [
         "medium",
         "Steady leak from the pavement joint near the university gate.",
         "in_progress",
+        "lerato",
         "2026-10-03 11:40:00",
     ),
     (
@@ -82,15 +107,18 @@ SAMPLE_REPORTS = [
         "high",
         "Burst pipe in the yard running water into the storm drain.",
         "resolved",
+        None,
         "2026-10-05 07:05:00",
     ),
 ]
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 PHONE_RE = re.compile(r"^(?:\+27|0)[1-9]\d{8}$")
+USERNAME_RE = re.compile(r"^[a-z0-9_]{3,20}$")
 
 # Configure static folder pointing to FRONTEND_DIR
 app = Flask(__name__, static_folder=str(FRONTEND_DIR), static_url_path="")
+app.secret_key = os.environ.get("SECRET_KEY", "pretoria-water-dev-secret-change-me")
 
 
 def get_db():
@@ -111,21 +139,99 @@ def now_utc():
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
 
-def init_db():
-    fresh = not DB_PATH.exists()
-    conn = sqlite3.connect(DB_PATH)
-    conn.executescript(SCHEMA)
-    if fresh:
-        conn.executemany(
+def migrate(conn):
+    columns = [row["name"] for row in conn.execute("PRAGMA table_info(reports)")]
+    if "user_id" not in columns:
+        conn.execute("ALTER TABLE reports ADD COLUMN user_id INTEGER")
+
+
+def seed_users(conn):
+    for username, email, password, role in SEED_USERS:
+        conn.execute(
+            """
+            INSERT INTO users (username, email, password_hash, role, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (username, email, generate_password_hash(password), role, now_utc()),
+        )
+
+
+def seed_reports(conn):
+    for report in SAMPLE_REPORTS:
+        owner = report[8]
+        owner_id = None
+        if owner:
+            row = conn.execute("SELECT id FROM users WHERE username = ?", (owner,)).fetchone()
+            owner_id = row["id"] if row else None
+        conn.execute(
             """
             INSERT INTO reports
-                (full_name, email, phone, address, area, severity, description, status, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (user_id, full_name, email, phone, address, area, severity, description, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            SAMPLE_REPORTS,
+            (
+                owner_id,
+                report[0],
+                report[1],
+                report[2],
+                report[3],
+                report[4],
+                report[5],
+                report[6],
+                report[7],
+                report[9],
+            ),
         )
+
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.executescript(SCHEMA)
+    migrate(conn)
+    if conn.execute("SELECT COUNT(*) AS count FROM users").fetchone()["count"] == 0:
+        seed_users(conn)
+    if conn.execute("SELECT COUNT(*) AS count FROM reports").fetchone()["count"] == 0:
+        seed_reports(conn)
     conn.commit()
     conn.close()
+
+
+def current_user():
+    user_id = session.get("user_id")
+    if not user_id:
+        return None
+    row = get_db().execute(
+        "SELECT id, username, email, role FROM users WHERE id = ?", (user_id,)
+    ).fetchone()
+    if row is None:
+        session.clear()
+        return None
+    return dict(row)
+
+
+def login_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        user = current_user()
+        if user is None:
+            return jsonify(message="Authentication required. Please sign in."), 401
+        g.user = user
+        return view(*args, **kwargs)
+
+    return wrapped
+
+
+def serialize_report(row):
+    data = dict(row)
+    user = g.get("user")
+    if user is None:
+        data["can_edit"] = False
+    else:
+        data["can_edit"] = user["role"] == "admin" or (
+            data.get("user_id") is not None and data["user_id"] == user["id"]
+        )
+    return data
 
 
 def validate_report(payload):
@@ -205,34 +311,113 @@ def list_areas():
     return jsonify(AREAS)
 
 
+@app.post("/api/auth/register")
+def register():
+    payload = request.get_json(silent=True) or {}
+    username = str(payload.get("username") or "").strip().lower()
+    email = str(payload.get("email") or "").strip().lower()
+    password = str(payload.get("password") or "")
+
+    errors = {}
+    if not username:
+        errors["username"] = "Username is required."
+    elif not USERNAME_RE.match(username):
+        errors["username"] = "Username must be 3-20 characters (letters, numbers or underscore)."
+    if not email:
+        errors["email"] = "Email address is required."
+    elif not EMAIL_RE.match(email):
+        errors["email"] = "Enter a valid email address."
+    if not password:
+        errors["password"] = "Password is required."
+    elif len(password) < 6:
+        errors["password"] = "Password must be at least 6 characters."
+    if errors:
+        return jsonify(message="Validation failed.", errors=errors), 422
+
+    db = get_db()
+    if db.execute("SELECT 1 FROM users WHERE username = ?", (username,)).fetchone():
+        return jsonify(message="Validation failed.", errors={"username": "That username is already taken."}), 409
+    if db.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
+        return jsonify(message="Validation failed.", errors={"email": "That email is already registered."}), 409
+
+    cursor = db.execute(
+        "INSERT INTO users (username, email, password_hash, role, created_at) VALUES (?, ?, ?, 'citizen', ?)",
+        (username, email, generate_password_hash(password), now_utc()),
+    )
+    db.commit()
+    session.clear()
+    session["user_id"] = cursor.lastrowid
+    user = db.execute(
+        "SELECT id, username, email, role FROM users WHERE id = ?", (cursor.lastrowid,)
+    ).fetchone()
+    return jsonify(dict(user)), 201
+
+
+@app.post("/api/auth/login")
+def login():
+    payload = request.get_json(silent=True) or {}
+    username = str(payload.get("username") or "").strip().lower()
+    password = str(payload.get("password") or "")
+
+    if not username or not password:
+        return jsonify(message="Username and password are required."), 422
+
+    row = get_db().execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+    if row is None or not check_password_hash(row["password_hash"], password):
+        return jsonify(message="Invalid username or password."), 401
+
+    session.clear()
+    session["user_id"] = row["id"]
+    return jsonify(id=row["id"], username=row["username"], email=row["email"], role=row["role"])
+
+
+@app.post("/api/auth/logout")
+def logout():
+    session.clear()
+    return jsonify(message="Signed out.")
+
+
+@app.get("/api/auth/me")
+def me():
+    user = current_user()
+    if user is None:
+        return jsonify(message="Not authenticated."), 401
+    return jsonify(user)
+
+
 @app.get("/api/reports")
+@login_required
 def list_reports():
     status = request.args.get("status", "").strip()
     area = request.args.get("area", "").strip()
     search = request.args.get("q", "").strip()
 
-    sql = "SELECT * FROM reports WHERE 1=1"
+    sql = (
+        "SELECT r.*, u.username AS reporter_username "
+        "FROM reports r LEFT JOIN users u ON u.id = r.user_id WHERE 1=1"
+    )
     params = []
 
     if status:
         if status not in VALID_STATUSES:
             return jsonify(message="Validation failed.", errors={"status": "Invalid status value."}), 422
-        sql += " AND status = ?"
+        sql += " AND r.status = ?"
         params.append(status)
     if area:
-        sql += " AND area = ?"
+        sql += " AND r.area = ?"
         params.append(area)
     if search:
-        sql += " AND (full_name LIKE ? OR address LIKE ? OR description LIKE ? OR area LIKE ?)"
+        sql += " AND (r.full_name LIKE ? OR r.address LIKE ? OR r.description LIKE ? OR r.area LIKE ?)"
         like = f"%{search}%"
         params.extend([like, like, like, like])
 
-    sql += " ORDER BY datetime(created_at) DESC, id DESC"
+    sql += " ORDER BY datetime(r.created_at) DESC, r.id DESC"
     rows = get_db().execute(sql, params).fetchall()
-    return jsonify([dict(row) for row in rows])
+    return jsonify([serialize_report(row) for row in rows])
 
 
 @app.post("/api/reports")
+@login_required
 def create_report():
     payload = request.get_json(silent=True) or {}
     data, errors = validate_report(payload)
@@ -243,10 +428,11 @@ def create_report():
     cursor = db.execute(
         """
         INSERT INTO reports
-            (full_name, email, phone, address, area, severity, description, status, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'submitted', ?)
+            (user_id, full_name, email, phone, address, area, severity, description, status, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'submitted', ?)
         """,
         (
+            g.user["id"],
             data["full_name"],
             data["email"],
             data["phone"],
@@ -258,19 +444,35 @@ def create_report():
         ),
     )
     db.commit()
-    row = db.execute("SELECT * FROM reports WHERE id = ?", (cursor.lastrowid,)).fetchone()
-    return jsonify(dict(row)), 201
+    row = db.execute(
+        """
+        SELECT r.*, u.username AS reporter_username
+        FROM reports r LEFT JOIN users u ON u.id = r.user_id
+        WHERE r.id = ?
+        """,
+        (cursor.lastrowid,),
+    ).fetchone()
+    return jsonify(serialize_report(row)), 201
 
 
 @app.get("/api/reports/<int:report_id>")
+@login_required
 def get_report(report_id):
-    row = get_db().execute("SELECT * FROM reports WHERE id = ?", (report_id,)).fetchone()
+    row = get_db().execute(
+        """
+        SELECT r.*, u.username AS reporter_username
+        FROM reports r LEFT JOIN users u ON u.id = r.user_id
+        WHERE r.id = ?
+        """,
+        (report_id,),
+    ).fetchone()
     if row is None:
         return jsonify(message="Report not found."), 404
-    return jsonify(dict(row))
+    return jsonify(serialize_report(row))
 
 
 @app.put("/api/reports/<int:report_id>")
+@login_required
 def update_report(report_id):
     payload = request.get_json(silent=True) or {}
     status = str(payload.get("status") or "").strip().lower()
@@ -278,31 +480,47 @@ def update_report(report_id):
         return jsonify(message="Validation failed.", errors={"status": "Invalid status value."}), 422
 
     db = get_db()
-    existing = db.execute("SELECT id FROM reports WHERE id = ?", (report_id,)).fetchone()
+    existing = db.execute("SELECT * FROM reports WHERE id = ?", (report_id,)).fetchone()
     if existing is None:
         return jsonify(message="Report not found."), 404
+
+    if g.user["role"] != "admin" and existing["user_id"] != g.user["id"]:
+        return jsonify(message="You can only update reports that you created."), 403
 
     db.execute(
         "UPDATE reports SET status = ?, updated_at = ? WHERE id = ?",
         (status, now_utc(), report_id),
     )
     db.commit()
-    row = db.execute("SELECT * FROM reports WHERE id = ?", (report_id,)).fetchone()
-    return jsonify(dict(row))
+    row = db.execute(
+        """
+        SELECT r.*, u.username AS reporter_username
+        FROM reports r LEFT JOIN users u ON u.id = r.user_id
+        WHERE r.id = ?
+        """,
+        (report_id,),
+    ).fetchone()
+    return jsonify(serialize_report(row))
 
 
 @app.delete("/api/reports/<int:report_id>")
+@login_required
 def delete_report(report_id):
     db = get_db()
-    existing = db.execute("SELECT id FROM reports WHERE id = ?", (report_id,)).fetchone()
+    existing = db.execute("SELECT * FROM reports WHERE id = ?", (report_id,)).fetchone()
     if existing is None:
         return jsonify(message="Report not found."), 404
+
+    if g.user["role"] != "admin" and existing["user_id"] != g.user["id"]:
+        return jsonify(message="You can only delete reports that you created."), 403
+
     db.execute("DELETE FROM reports WHERE id = ?", (report_id,))
     db.commit()
     return jsonify(message=f"Report {report_id} deleted.", deleted_id=report_id)
 
 
 @app.get("/api/stats")
+@login_required
 def stats():
     db = get_db()
     total = db.execute("SELECT COUNT(*) AS count FROM reports").fetchone()["count"]
@@ -330,9 +548,13 @@ def stats():
     ).fetchone()["count"]
 
     recent = [
-        dict(row)
+        serialize_report(row)
         for row in db.execute(
-            "SELECT * FROM reports ORDER BY datetime(created_at) DESC, id DESC LIMIT 5"
+            """
+            SELECT r.*, u.username AS reporter_username
+            FROM reports r LEFT JOIN users u ON u.id = r.user_id
+            ORDER BY datetime(r.created_at) DESC, r.id DESC LIMIT 5
+            """
         )
     ]
 
@@ -365,6 +587,16 @@ def reports_page():
 @app.get("/dashboard.html")
 def dashboard_page():
     return serve_frontend_file("dashboard.html")
+
+
+@app.get("/signin.html")
+def signin_page():
+    return serve_frontend_file("signin.html")
+
+
+@app.get("/register.html")
+def register_page():
+    return serve_frontend_file("register.html")
 
 
 @app.get("/js/<path:filename>")

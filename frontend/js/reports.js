@@ -1,8 +1,20 @@
-(function () {
+(async function () {
+  const user = await requireAuth();
+  if (!user) return;
+
   const reportsBody = document.getElementById("reports-body");
   const tableWrapper = document.getElementById("table-wrapper");
   const emptyState = document.getElementById("empty-state");
   const reportsCount = document.getElementById("reports-count");
+
+  const roleNotice = document.getElementById("role-notice");
+  if (roleNotice) {
+    roleNotice.textContent =
+      user.role === "admin"
+        ? "Admin mode: you can update and delete every report."
+        : "You can only update or delete reports that you created. Other reports are read-only.";
+    roleNotice.classList.remove("hidden");
+  }
 
   function statusOptions(currentStatus) {
     return Object.entries(STATUS_LABELS)
@@ -19,10 +31,41 @@
       .join("");
   }
 
+  function ownerChip(report) {
+    if (report.reporter_username) {
+      return (
+        ' <span data-testid="owner-username" class="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-500">@' +
+        escapeHtml(report.reporter_username) +
+        "</span>"
+      );
+    }
+    return ' <span data-testid="owner-username" class="text-xs text-slate-400">(unassigned)</span>';
+  }
+
   function rowHtml(report) {
+    const canEdit = !!report.can_edit;
+
+    const statusCell = canEdit
+      ? '<select data-testid="status-select" data-id="' +
+        report.id +
+        '" data-previous="' +
+        report.status +
+        '" class="status-select rounded border border-slate-300 bg-white px-2 py-1 text-sm focus:border-water-500 focus:outline-none">' +
+        statusOptions(report.status) +
+        "</select>"
+      : '<span data-testid="readonly-lock" class="inline-flex items-center rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500">Read-only</span>';
+
+    const actionsCell = canEdit
+      ? '<button type="button" data-testid="delete-report" data-id="' +
+        report.id +
+        '" class="delete-report rounded bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-100">Delete</button>'
+      : '<span class="text-xs text-slate-400">&mdash;</span>';
+
     return (
       '<tr data-testid="report-row" data-id="' +
       report.id +
+      '" data-can-edit="' +
+      (canEdit ? "true" : "false") +
       '" class="border-b border-slate-100 hover:bg-slate-50">' +
       '<td data-testid="report-id" class="px-4 py-3 text-sm font-semibold text-water-700">#' +
       report.id +
@@ -33,6 +76,7 @@
       "</div>" +
       '<div class="text-xs text-slate-500">' +
       escapeHtml(report.email) +
+      ownerChip(report) +
       "</div>" +
       "</td>" +
       '<td class="px-4 py-3 text-sm">' +
@@ -60,21 +104,13 @@
       "</span>" +
       "</td>" +
       '<td class="px-4 py-3 text-sm">' +
-      '<select data-testid="status-select" data-id="' +
-      report.id +
-      '" data-previous="' +
-      report.status +
-      '" class="status-select rounded border border-slate-300 bg-white px-2 py-1 text-sm focus:border-water-500 focus:outline-none">' +
-      statusOptions(report.status) +
-      "</select>" +
+      statusCell +
       "</td>" +
       '<td data-testid="report-date" class="px-4 py-3 text-sm text-slate-500">' +
       escapeHtml(report.created_at) +
       "</td>" +
       '<td class="px-4 py-3 text-sm">' +
-      '<button type="button" data-testid="delete-report" data-id="' +
-      report.id +
-      '" class="delete-report rounded bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-100">Delete</button>' +
+      actionsCell +
       "</td>" +
       "</tr>"
     );

@@ -34,10 +34,14 @@
         <p id="site-title" class="text-lg font-bold tracking-tight">Pretoria Municipality &mdash; Water Services</p>
         <p class="text-xs text-water-100">Water Leak Reporting Portal</p>
       </div>
-      <nav class="flex items-center gap-2 text-sm">
+      <nav class="flex flex-wrap items-center gap-2 text-sm">
         <a id="nav-link-report" href="index.html" class="rounded px-3 py-2 font-medium hover:bg-white/10">Report a Leak</a>
         <a id="nav-link-reports" href="reports.html" class="rounded bg-white/15 px-3 py-2 font-medium">View Reports</a>
         <a id="nav-link-dashboard" href="dashboard.html" class="rounded px-3 py-2 font-medium hover:bg-white/10">Dashboard</a>
+        <span class="mx-1 hidden h-6 w-px bg-white/30 sm:inline-block"></span>
+        <span id="current-user" data-testid="current-user" class="px-2 text-water-100"></span>
+        <button id="signout-button" data-testid="signout-button" type="button"
+          class="rounded border border-white/40 px-3 py-2 font-medium hover:bg-white/10">Sign out</button>
       </nav>
     </div>
   </header>
@@ -53,6 +57,8 @@
         Refresh
       </button>
     </div>
+
+    <div id="role-notice" data-testid="role-notice" class="mb-4 hidden rounded border border-water-200 bg-water-50 px-4 py-3 text-sm text-water-900"></div>
 
     <section class="mb-4 rounded-lg bg-white p-4 shadow">
       <div class="grid gap-4 sm:grid-cols-3">
@@ -84,6 +90,7 @@
             <option value="Mamelodi">Mamelodi</option>
             <option value="Menlo Park">Menlo Park</option>
             <option value="Moreleta Park">Moreleta Park</option>
+            <option value="muckleneuk">muckleneuk</option>
             <option value="Pretoria Central">Pretoria Central</option>
             <option value="Rietfontein">Rietfontein</option>
             <option value="Soshanguve">Soshanguve</option>
